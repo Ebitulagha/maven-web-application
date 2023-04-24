@@ -1,0 +1,44 @@
+pipeline {
+    agent {
+        label "Ebit"
+    }    
+    tools {
+        maven "maven"
+    }
+    stages {
+        stage ('clone my code') {
+            steps {
+             git credentialsId: '5c2b7b18-4fb0-4e48-942d-43f0a2ba86ca', url: 'https://github.com/Ebitulagha/maven-web-application'   
+            }
+        }
+       stage  ('build') {
+           steps {
+               sh "echo 'This is my first build' "
+               sh "mvn clean package"
+           }
+       }
+       stage ('code Quality') {
+           steps {
+               sh "mvn sonar:sonar"
+           }
+       }
+       stage ('Upload Artifactory') {
+           steps {
+               sh "mvn deploy"
+           }
+       }
+       stage ('UAT') {
+           steps {
+               deploy adapters: [tomcat9(credentialsId: '42323c94-d2da-476d-b485-7aacb7629ab5', path: '', url: 'http://3.87.248.177:8080')], contextPath: null, war: 'target/*war'
+           }
+       }
+       stage ('manual approval') {
+           steps {
+               sh "echo ready for review and approval"
+               timeout(time:5, unit:'HOURS') {
+                   input message: 'application ready for deployment, please review and approve'
+               }
+            }
+       }
+    }
+}
